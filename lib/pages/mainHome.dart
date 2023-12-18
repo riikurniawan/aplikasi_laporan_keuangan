@@ -1,12 +1,13 @@
 import 'dart:convert';
-import 'dart:math';
-// ignore: unused_import
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'settingScreen.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
-  runApp(const MainHomeScreen(username: ''));
+  initializeDateFormatting('id', null).then((_) {
+    runApp(const MainHomeScreen(username: ''));
+  });
 }
 
 class MainHomeScreen extends StatelessWidget {
@@ -69,6 +70,7 @@ class MainScreenState extends State<MainScreen> {
     );
   }
 }
+
 class HomeScreen extends StatefulWidget {
   final String username;
 
@@ -77,10 +79,8 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-class _HomeScreenState extends State<HomeScreen> {
-  int currentPage = 1;
-  int itemsPerPage = 5;
 
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     String username = widget.username;
@@ -133,130 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                FutureBuilder(
-                  future: fetchData(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else {
-                      // Hitung total penghasilan dalam satu bulan
-                      double totalPenghasilan = 0;
-
-                      // ignore: unused_local_variable
-                      int totalPages = (snapshot.data!.length / itemsPerPage).ceil();
-
-                  // Calculate the index range for the current page
-                  int startIndex = (currentPage - 1) * itemsPerPage;
-                  int endIndex = min(currentPage * itemsPerPage, snapshot.data!.length);
-
-                  List<Map<String, dynamic>> currentPageData = snapshot.data!
-                      .sublist(startIndex, endIndex)
-                      .toList();
-
-                      for (var data in snapshot.data!) {
-                        if (data['total_penghasilan'] != null) {
-                          // Konversi nilai 'total_penghasilan' dari String ke double
-                          totalPenghasilan +=
-                              double.parse(data['total_penghasilan']);
-                        }
-                      }
-
-                      List<DataRow> rows = List<DataRow>.generate(
-                        min(5, snapshot.data!.length),
-                        (int index) => DataRow(
-                          cells: <DataCell>[
-                            DataCell(Text(
-                              '${index + 1}',
-                              style: const TextStyle(fontSize: 18),
-                            )),
-                            DataCell(Text(
-                              '${snapshot.data?[index]['tanggal']}',
-                              style: const TextStyle(fontSize: 18),
-                            )),
-                            DataCell(
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0),
-                                child: Text(
-                                  'Rp.${snapshot.data?[index]['total_penghasilan']}',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      return Column(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 16.0),
-                            padding: const EdgeInsets.all(16.0),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 128, 130,
-                                  132), // Ganti warna latar belakang sesuai keinginan
-                              borderRadius: BorderRadius.circular(
-                                  10.0), // Ganti bentuk sudut sesuai keinginan
-                            ),
-                            child: Text(
-                              'Total Penghasilan Bulan Ini: Rp.${totalPenghasilan.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color.fromARGB(255, 25, 24,
-                                    24), // Ganti warna teks sesuai keinginan
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columnSpacing: 16.0,
-                              columns: const <DataColumn>[
-                                DataColumn(
-                                  label: Text('No'),
-                                ),
-                                DataColumn(
-                                  label: Text('Tanggal'),
-                                ),
-                                DataColumn(
-                                  label: Text('Jumlah Pemasukan'),
-                                ),
-                              ],
-                              rows: rows,
-                            ),
-                          ),
-                          Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                currentPage = max(1, currentPage - 1);
-                              });
-                            },
-                            child: const Text('Prev'),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                currentPage = min(totalPages, currentPage + 1);
-                              });
-                            },
-                            child: const Text('Next'),
-                          ),
-                        ],
-                      ),
-                        ],
-                      );
-                    }
-                  },
-                ),
+                // Add the PaginatedDataList widget here
+                PaginatedDataList(username: username),
               ],
             ),
           ),
@@ -266,14 +144,160 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-Future<List<Map<String, dynamic>>> fetchData() async {
-  final response = await http.get(Uri.parse(
-      "http://10.0.2.2/list_ukm/getdata.php")); // Ganti dengan URL API yang sesuai
+class PaginatedDataList extends StatefulWidget {
+  final String username;
 
-  if (response.statusCode == 200) {
-    List<dynamic> data = jsonDecode(response.body);
-    return data.cast<Map<String, dynamic>>();
-  } else {
-    throw Exception('Failed to load data from API');
+  const PaginatedDataList({Key? key, required this.username}) : super(key: key);
+
+  @override
+  _PaginatedDataListState createState() => _PaginatedDataListState();
+}
+
+class _PaginatedDataListState extends State<PaginatedDataList> {
+  late Future<List<Map<String, dynamic>>> futureData;
+  late List<int> availableMonths;
+  late int selectedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    futureData = fetchData();
+    availableMonths = List.generate(12, (index) => index + 1);
+    selectedMonth = DateTime.now().month;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchData() async {
+    final response =
+        await http.get(Uri.parse('http://10.0.2.2/list_ukm/getdata.php'));
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: futureData,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          final totalThisMonth =
+              _calculateTotalForMonth(snapshot.data ?? [], selectedMonth);
+          final formattedTotalThisMonth =
+              NumberFormat.currency(locale: 'id', symbol: 'Rp')
+                  .format(totalThisMonth);
+
+          return Column(
+            children: [
+              _buildMonthDropdown(),
+              PaginatedDataTable(
+                header: Text('Penghasilan Bulan Ini: $formattedTotalThisMonth'),
+                columns: [
+                  DataColumn(label: Text('No')),
+                  DataColumn(label: Text('Tanggal')),
+                  DataColumn(label: Text('Total Penghasilan')),
+                ],
+                source: _DataSource(context, snapshot.data ?? []),
+                rowsPerPage: 5,
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildMonthDropdown() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text('Pilih Bulan: '),
+          DropdownButton<int>(
+            value: selectedMonth,
+            items: availableMonths.map((month) {
+              return DropdownMenuItem<int>(
+                value: month,
+                child: Text(month.toString()),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedMonth = value!;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _calculateTotalForMonth(
+      List<Map<String, dynamic>> dataList, int month) {
+    double total = 0;
+    for (final data in dataList) {
+      final date = DateTime.parse(data['tanggal']);
+      if (date.month == month) {
+        total += double.parse(data['total_penghasilan'].toString());
+      }
+    }
+    return total;
+  }
+}
+
+class _DataSource extends DataTableSource {
+  final BuildContext context;
+  final List<Map<String, dynamic>> dataList;
+
+  _DataSource(this.context, this.dataList);
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= dataList.length) return null;
+    final data = dataList[index];
+
+    final totalPenghasilan = double.parse(data['total_penghasilan'].toString());
+
+    // Format the total_penghasilan as Rupiah
+    final formattedTotalPenghasilan =
+        NumberFormat.currency(locale: 'id', symbol: 'Rp')
+            .format(totalPenghasilan);
+
+    return DataRow(cells: [
+      DataCell(Text('${data['id_penghasilan']}')),
+      DataCell(Text('${data['tanggal']}')),
+      DataCell(Text(formattedTotalPenghasilan)),
+    ]);
+  }
+
+  @override
+  int get rowCount => dataList.length;
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
+class SettingsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings'),
+      ),
+      body: Center(
+        child: Text('Settings Screen'),
+      ),
+    );
   }
 }
