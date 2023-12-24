@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/loginScreen.dart';
 import 'pages/mainHome.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  runApp(MyApp(
+    token: prefs.getString('token'),
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final token;
+  const MyApp({required this.token, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-        debugShowCheckedModeBanner: false, home: mainScreen());
+    print(token);
+    return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: (JwtDecoder.isExpired(token) == false)
+            ? MainHomeScreen(token: token)
+            : loginScreen());
   }
 }
 
@@ -53,8 +65,7 @@ class mainScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) {
-                        // return loginScreen();
-                        return const MainHomeScreen(token: null);
+                        return loginScreen();
                       }));
                     },
                     style: ButtonStyle(

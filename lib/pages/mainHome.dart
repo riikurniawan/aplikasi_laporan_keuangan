@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class MainHomeScreen extends StatelessWidget {
-  // final String username;
   // ignore: prefer_typing_uninitialized_variables
   final token;
 
@@ -32,8 +32,29 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // prepare variabel to store decoded jwt
+  late int ukmId;
+  late String ukmUsername;
+  late String ukmName;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // decode jwt
+    Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(widget.token);
+
+    ukmUsername = jwtDecodedToken['username'];
+    ukmId = int.parse(jwtDecodedToken['ukmId']);
+    ukmName = jwtDecodedToken['name'];
+  }
+
   List<Widget> get _screens => <Widget>[
-        const HomeScreen(username: "Ari Kurnaiwan"),
+        HomeScreen(
+          username: ukmUsername,
+          ukmId: ukmId,
+          name: ukmName,
+        ),
         SettingsScreen(),
       ];
 
@@ -69,8 +90,15 @@ class MainScreenState extends State<MainScreen> {
 
 class HomeScreen extends StatefulWidget {
   final String username;
+  final int ukmId;
+  final String name;
 
-  const HomeScreen({Key? key, required this.username}) : super(key: key);
+  const HomeScreen(
+      {Key? key,
+      required this.username,
+      required this.ukmId,
+      required this.name})
+      : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -80,6 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     String username = widget.username;
+    int ukmId = widget.ukmId;
+    String name = widget.name;
 
     DateTime currentDate = DateTime.now();
     String formattedDate =
@@ -109,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Selamat datang, $username!',
+                          'Selamat datang, $name!',
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 19,
@@ -164,16 +194,24 @@ class _PaginatedDataListState extends State<PaginatedDataList> {
 
   Future<List<Map<String, dynamic>>> fetchData() async {
     final response = await http
-        .get(Uri.parse('http://10.170.6.219:8080/api/ukm/pemasukan/1'));
-    var resBody = response.body;
-    debugPrint(jsonDecode(resBody));
+        .get(Uri.parse('http://192.168.100.10:8080/api/ukm/pemasukan/2'));
 
     if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> data = responseData['data'][0]['pemasukan'];
+
       return List<Map<String, dynamic>>.from(data);
     } else {
       throw Exception('Failed to load data');
     }
+  }
+
+  List<Map<String, dynamic>> _filteredData(
+      List<Map<String, dynamic>> dataList, int month) {
+    return dataList.where((data) {
+      final date = DateTime.parse(data['tanggal_pemasukan']);
+      return date.month == month;
+    }).toList();
   }
 
   @override
@@ -182,12 +220,13 @@ class _PaginatedDataListState extends State<PaginatedDataList> {
       future: futureData,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else {
-          final totalThisMonth =
-              _calculateTotalForMonth(snapshot.data ?? [], selectedMonth);
+          final filteredData =
+              _filteredData(snapshot.data ?? [], selectedMonth);
+          final totalThisMonth = _calculateTotalForMonth(filteredData);
           final formattedTotalThisMonth =
               NumberFormat.currency(locale: 'id', symbol: 'Rp')
                   .format(totalThisMonth);
@@ -196,13 +235,14 @@ class _PaginatedDataListState extends State<PaginatedDataList> {
             children: [
               _buildMonthDropdown(),
               PaginatedDataTable(
+                key: ValueKey(selectedMonth),
                 header: Text('Penghasilan Bulan Ini: $formattedTotalThisMonth'),
-                columns: [
+                columns: const [
                   DataColumn(label: Text('No')),
                   DataColumn(label: Text('Tanggal')),
                   DataColumn(label: Text('Total Penghasilan')),
                 ],
-                source: _DataSource(context, snapshot.data ?? []),
+                source: _DataSource(context, filteredData),
                 rowsPerPage: 5,
               ),
             ],
@@ -218,13 +258,14 @@ class _PaginatedDataListState extends State<PaginatedDataList> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Pilih Bulan: '),
+          const Text('Pilih Bulan: '),
           DropdownButton<int>(
             value: selectedMonth,
             items: availableMonths.map((month) {
               return DropdownMenuItem<int>(
                 value: month,
-                child: Text(month.toString()),
+                child: Text(
+                    _getMonthName(month)), // Menggunakan fungsi _getMonthName
               );
             }).toList(),
             onChanged: (value) {
@@ -238,14 +279,15 @@ class _PaginatedDataListState extends State<PaginatedDataList> {
     );
   }
 
-  double _calculateTotalForMonth(
-      List<Map<String, dynamic>> dataList, int month) {
+  String _getMonthName(int month) {
+    // Menggunakan objek DateTime untuk mendapatkan nama bulan
+    return DateFormat('MMMM').format(DateTime(2022, month, 1));
+  }
+
+  double _calculateTotalForMonth(List<Map<String, dynamic>> dataList) {
     double total = 0;
     for (final data in dataList) {
-      final date = DateTime.parse(data['tanggal']);
-      if (date.month == month) {
-        total += double.parse(data['total_penghasilan'].toString());
-      }
+      total += double.parse(data['total_pemasukan'].toString());
     }
     return total;
   }
@@ -262,18 +304,23 @@ class _DataSource extends DataTableSource {
     if (index >= dataList.length) return null;
     final data = dataList[index];
 
-    final totalPenghasilan = double.parse(data['total_penghasilan'].toString());
+    try {
+      final totalPenghasilan = double.parse(data['total_pemasukan'].toString());
 
-    // Format the total_penghasilan as Rupiah
-    final formattedTotalPenghasilan =
-        NumberFormat.currency(locale: 'id', symbol: 'Rp')
-            .format(totalPenghasilan);
+      // Format the total_penghasilan as Rupiah
+      final formattedTotalPenghasilan =
+          NumberFormat.currency(locale: 'id', symbol: 'Rp')
+              .format(totalPenghasilan);
 
-    return DataRow(cells: [
-      DataCell(Text('${data['id_penghasilan']}')),
-      DataCell(Text('${data['tanggal']}')),
-      DataCell(Text(formattedTotalPenghasilan)),
-    ]);
+      return DataRow(cells: [
+        DataCell(Text((index + 1).toString())),
+        DataCell(Text('${data['tanggal_pemasukan']}')),
+        DataCell(Text(formattedTotalPenghasilan)),
+      ]);
+    } catch (e) {
+      print('Error: $e');
+      return null; // Atau tindakan lain yang sesuai
+    }
   }
 
   @override

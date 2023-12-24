@@ -70,13 +70,11 @@ class _loginScreenState extends State<loginScreen> {
       );
     } else if (response.statusCode == 404 || response.statusCode == 401) {
       Map<String, dynamic> data = json.decode(response.body);
-      print(data);
       setState(() {
         errorMessage = "${data['messages']['error']}";
       });
     } else {
       Map<String, dynamic> errorData = json.decode(response.body);
-      print(errorData);
       String errorMessageFromApi =
           errorData['messages']['error'] ?? "Terjadi kesalahan pada server";
       setState(() {
