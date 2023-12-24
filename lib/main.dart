@@ -9,7 +9,7 @@ Future<void> main() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
   runApp(MyApp(
-    token: prefs.getString('token'),
+    token: prefs.getString('token') ?? '',
   ));
 }
 
@@ -19,10 +19,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(token);
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: (JwtDecoder.isExpired(token) == false)
+        home: (token.isNotEmpty && JwtDecoder.isExpired(token) == false)
             ? MainHomeScreen(token: token)
             : loginScreen());
   }

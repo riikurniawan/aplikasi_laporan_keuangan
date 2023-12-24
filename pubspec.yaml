@@ -1,4 +1,4 @@
-name: bukuin
+name: aplikasi_keuangan_pbl
 description: "Aplikasi yang digunakan UKM untuk monitoring pemasukan UKM perhari, khusus dalam bidang katering yang digunakan oleh PT. Ade Mestakung Abadi"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

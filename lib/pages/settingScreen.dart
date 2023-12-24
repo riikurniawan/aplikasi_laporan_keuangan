@@ -21,7 +21,6 @@ class SettingsScreen extends StatelessWidget {
                   children: <Widget>[
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      
                       title: SizedBox(
                         child: TextButton.icon(
                           onPressed: () {
