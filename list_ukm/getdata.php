@@ -4,6 +4,7 @@
 include 'conn.php';
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: *");
+header('Content-Type: application/json; charset=utf-8');
 
 // Menggunakan prepared statement untuk mencegah SQL injection
 $stmt = $connect->prepare("SELECT * FROM penghasilan");

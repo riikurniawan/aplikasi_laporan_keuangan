@@ -2,32 +2,28 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart';
-
-void main() {
-  initializeDateFormatting('id', null).then((_) {
-    runApp(const MainHomeScreen(username: ''));
-  });
-}
 
 class MainHomeScreen extends StatelessWidget {
-  final String username;
+  // final String username;
+  // ignore: prefer_typing_uninitialized_variables
+  final token;
 
-  const MainHomeScreen({Key? key, required this.username}) : super(key: key);
+  const MainHomeScreen({required this.token, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: MainScreen(username: username),
+      home: MainScreen(token: token),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  final String username;
+  // ignore: prefer_typing_uninitialized_variables
+  final token;
 
-  const MainScreen({Key? key, required this.username}) : super(key: key);
+  const MainScreen({required this.token, Key? key}) : super(key: key);
 
   @override
   State<MainScreen> createState() => MainScreenState();
@@ -37,7 +33,7 @@ class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   List<Widget> get _screens => <Widget>[
-        HomeScreen(username: widget.username),
+        const HomeScreen(username: "Ari Kurnaiwan"),
         SettingsScreen(),
       ];
 
@@ -167,8 +163,10 @@ class _PaginatedDataListState extends State<PaginatedDataList> {
   }
 
   Future<List<Map<String, dynamic>>> fetchData() async {
-    final response =
-        await http.get(Uri.parse('http://10.0.2.2/list_ukm/getdata.php'));
+    final response = await http
+        .get(Uri.parse('http://10.170.6.219:8080/api/ukm/pemasukan/1'));
+    var resBody = response.body;
+    debugPrint(jsonDecode(resBody));
 
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);

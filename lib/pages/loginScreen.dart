@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'mainHome.dart';
 
@@ -13,6 +14,17 @@ class _loginScreenState extends State<loginScreen> {
   TextEditingController user = TextEditingController();
   TextEditingController pass = TextEditingController();
   String errorMessage = '';
+  late SharedPreferences prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    initSharedPref();
+  }
+
+  void initSharedPref() async {
+    prefs = await SharedPreferences.getInstance();
+  }
 
   Future<void> _login(BuildContext context) async {
     if (user.text.isEmpty) {
@@ -29,43 +41,46 @@ class _loginScreenState extends State<loginScreen> {
       return;
     }
 
+    // request body
+    var reqBody = {"username": user.text, "password": pass.text};
+
+    // process
     final response = await http.post(
-      Uri.parse('http://10.170.7.146:8080/api/ukm/auth'),
-      body: {
-        "username": user.text,
-        "password": pass.text,
-      },
+      Uri.parse('http://192.168.100.10:8080/api/ukm/auth'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(reqBody),
     );
 
-    print(response.body);
-
+    // if get an token
     if (response.statusCode == 200) {
       Map<String, dynamic> data = json.decode(response.body);
-      
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MainHomeScreen(username: "${data['nama_ukm'].toString()}" ),
-          ),
-        ); 
-    } 
-    else if (response.statusCode != 200) {
-  Map<String, dynamic> data = json.decode(response.body);
-  print("Response status code: ${response.statusCode}");
-  print("Response body: $data");
-  setState(() {
-    errorMessage = "Login gagal. ${data['messages']['error']}";
-  });
-}
 
-    else {
+      // get token
+      var myToken = data['access_token'];
+
+      // store token on shared_preferences
+      prefs.setString('token', myToken);
+
+      // ignore: use_build_context_synchronously
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MainHomeScreen(token: myToken),
+        ),
+      );
+    } else if (response.statusCode == 404 || response.statusCode == 401) {
+      Map<String, dynamic> data = json.decode(response.body);
+      print(data);
+      setState(() {
+        errorMessage = "${data['messages']['error']}";
+      });
+    } else {
       Map<String, dynamic> errorData = json.decode(response.body);
+      print(errorData);
       String errorMessageFromApi =
           errorData['messages']['error'] ?? "Terjadi kesalahan pada server";
-
       setState(() {
-        errorMessage =
-            errorMessageFromApi;
+        errorMessage = errorMessageFromApi;
       });
     }
   }

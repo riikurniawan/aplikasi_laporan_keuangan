@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
 import 'pages/loginScreen.dart';
-
+import 'pages/mainHome.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,10 +11,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(debugShowCheckedModeBanner: false, home: mainScreen());
+    return const MaterialApp(
+        debugShowCheckedModeBanner: false, home: mainScreen());
   }
 }
 
+// ignore: camel_case_types
 class mainScreen extends StatelessWidget {
   const mainScreen({super.key});
 
@@ -46,30 +47,31 @@ class mainScreen extends StatelessWidget {
             ),
             Column(
               children: [
-                Container(
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.8,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) {
-                        return loginScreen();
+                        // return loginScreen();
+                        return const MainHomeScreen(token: null);
                       }));
                     },
-                    child: const Text(
-                      'Masuk',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
                     style: ButtonStyle(
                         backgroundColor:
                             const MaterialStatePropertyAll(Color(0xFF0017ED)),
-                        minimumSize: const MaterialStatePropertyAll(Size(60, 60)),
+                        minimumSize:
+                            const MaterialStatePropertyAll(Size(60, 60)),
                         elevation: const MaterialStatePropertyAll(0),
                         shape: MaterialStatePropertyAll(RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ))),
+                    child: const Text(
+                      'Masuk',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                 ),
-              
               ],
             ),
             Container(
@@ -85,127 +87,3 @@ class mainScreen extends StatelessWidget {
     ));
   }
 }
-
-
-
-// class signUpScreen extends StatelessWidget {
-//   const signUpScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       home: Scaffold(
-//           body: SingleChildScrollView(
-//         child: Center(
-//             child: Container(
-//           constraints: BoxConstraints(maxWidth: 550),
-//           child: Column(
-//             children: [
-//               Container(
-//                 margin: EdgeInsets.symmetric(vertical: 40),
-//                 child: Center(
-//                   child: Text(
-//                     'Registrasi',
-//                     style: TextStyle(
-//                         fontSize: 30,
-//                         fontWeight: FontWeight.w800,
-//                         color: Color(0xFF0017ED)),
-//                   ),
-//                 ),
-//               ),
-//               Container(
-//                 width: MediaQuery.of(context).size.width * 0.8,
-//                 padding: EdgeInsets.symmetric(horizontal: 13),
-//                 decoration: BoxDecoration(
-//                     color: Color(0xFFDBE2EF),
-//                     borderRadius: BorderRadius.circular(10)),
-//                 child: TextField(
-//                   decoration: InputDecoration(
-//                     hintText: 'Email',
-//                     border: InputBorder.none,
-//                   ),
-//                 ),
-//               ),
-//               Container(
-//                 width: MediaQuery.of(context).size.width * 0.8,
-//                 margin: EdgeInsets.only(top: 25),
-//                 padding: EdgeInsets.symmetric(horizontal: 13),
-//                 decoration: BoxDecoration(
-//                     color: Color(0xFFDBE2EF),
-//                     borderRadius: BorderRadius.circular(10)),
-//                 child: TextField(
-//                   decoration: InputDecoration(
-//                     hintText: 'Nama Pengguna',
-//                     border: InputBorder.none,
-//                   ),
-//                 ),
-//               ),
-//               Container(
-//                 width: MediaQuery.of(context).size.width * 0.8,
-//                 margin: EdgeInsets.only(top: 25),
-//                 padding: EdgeInsets.symmetric(horizontal: 13),
-//                 decoration: BoxDecoration(
-//                     color: Color(0xFFDBE2EF),
-//                     borderRadius: BorderRadius.circular(10)),
-//                 child: TextField(
-//                   decoration: InputDecoration(
-//                     hintText: 'Kata Sandi',
-//                     border: InputBorder.none,
-//                   ),
-//                 ),
-//               ),
-//               Container(
-//                 width: MediaQuery.of(context).size.width * 0.8,
-//                 margin: EdgeInsets.only(top: 25),
-//                 padding: EdgeInsets.symmetric(horizontal: 13),
-//                 decoration: BoxDecoration(
-//                     color: Color(0xFFDBE2EF),
-//                     borderRadius: BorderRadius.circular(10)),
-//                 child: TextField(
-//                   decoration: InputDecoration(
-//                     hintText: 'Konfirmasi Kata Sandi',
-//                     border: InputBorder.none,
-//                   ),
-//                 ),
-//               ),
-//               Container(
-//                 margin: EdgeInsets.symmetric(vertical: 40),
-//                 child: TextButton(
-//                   onPressed: () {
-//                     Navigator.push(context,
-//                         MaterialPageRoute(builder: (context) {
-//                       return const loginScreen();
-//                     }));
-//                   },
-//                   child: Text(
-//                     'Sudah Punya Akun ? Masuk Sekarang',
-//                     style: TextStyle(color: Color(0xFF0017ED)),
-//                   ),
-//                 ),
-//               ),
-//               // Container(
-//               //   width: MediaQuery.of(context).size.width * 0.8,
-//               //   child: ElevatedButton(
-//               //     onPressed: () {},
-//               //     child: Text(
-//               //       'Daftar',
-//               //       style: TextStyle(fontSize: 16, color: Colors.white),
-//               //     ),
-//               //     style: ButtonStyle(
-//               //         backgroundColor:
-//               //             MaterialStatePropertyAll(Color(0xFF0017ED)),
-//               //         minimumSize: MaterialStatePropertyAll(Size(60, 60)),
-//               //         elevation: MaterialStatePropertyAll(0),
-//               //         shape: MaterialStatePropertyAll(RoundedRectangleBorder(
-//               //           borderRadius: BorderRadius.circular(10),
-//               //         ))),
-//               //   ),
-//               // ),
-//             ],
-//           ),
-//         )),
-//       )),
-//     );
-//   }
-// }
